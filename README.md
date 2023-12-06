@@ -1,2 +1,2 @@
 # OnlineChat
-Online Muktiuser chat in Rust
+Online Multiuser chat in Rust
