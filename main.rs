@@ -41,11 +41,22 @@ fn server(_message: Receiver<Message>) -> Result<()>
 
 fn client(mut stream: TcpStream, _messages: Sender<Message>) -> Result<()>
 {
-    let _ = writeln!(stream, "Hello").map_err(|err| 
+    message.send(Message::ClientConnected).map_err(|err|
+    {
+        eprintln!("ERROR: could not send message to server thread {err}",
+         err = Sensitive(err))
+    })?;
+    let buffer = Vec::new();
+    buffer.resize(64, 0);
+    loop
+    {
+        let n = stream.read(&mut buffer).map_err(|err|
         {
-            eprintln!("ERROR: can not write message {err}")
-        });
-        todo!()
+            messages.send(Message::ClientDisconnected);
+        })?;
+        Message::NewMessage(buffer[0..n]);
+    }
+    todo!()
 }
 
 fn main() -> Result<()> 
