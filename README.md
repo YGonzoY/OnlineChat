@@ -1,2 +1,2 @@
 # OnlineChat
-Online Multiuser crossplatform chat made with Rust 
+Online Multiuser crossplatform console chat made with Rust 
