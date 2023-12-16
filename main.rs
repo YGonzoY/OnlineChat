@@ -39,22 +39,23 @@ fn server(_message: Receiver<Message>) -> Result<()>
     todo!()
 }
 
-fn client(mut stream: TcpStream, _messages: Sender<Message>) -> Result<()>
+fn client(mut stream: TcpStream, messages: Sender<Message>) -> Result<()>
 {
-    message.send(Message::ClientConnected).map_err(|err|
+    messages.send(Message::ClientConnected).map_err(|err|
     {
-        eprintln!("ERROR: could not send message to server thread {err}",
-         err = Sensitive(err))
+        eprintln!("ERROR: could not send message to server thread {err}")
+        //err = Sensitive(err))
     })?;
-    let buffer = Vec::new();
+    let mut buffer = Vec::new();
     buffer.resize(64, 0);
     loop
     {
         let n = stream.read(&mut buffer).map_err(|err|
         {
-            messages.send(Message::ClientDisconnected);
+            eprintln!("ERROR: could not read message from client: {err}");
+            let _ = messages.send(Message::ClientDisconnected);
         })?;
-        Message::NewMessage(buffer[0..n]);
+        messages.send(Message::NewMessage(buffer[0..n].to_vec()));
     }
     todo!()
 }
