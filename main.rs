@@ -1,6 +1,7 @@
 use std::net::{TcpListener, TcpStream};
 use std::result;
 use std::io::Write;
+use std::io::Read;
 use std::fmt;
 use std::thread;
 use std::sync::mpsc::{Sender, Receiver, channel};
@@ -44,18 +45,12 @@ fn client(mut stream: TcpStream, messages: Sender<Message>) -> Result<()>
     messages.send(Message::ClientConnected).map_err(|err|
     {
         eprintln!("ERROR: could not send message to server thread {err}")
-        //err = Sensitive(err))
     })?;
     let mut buffer = Vec::new();
     buffer.resize(64, 0);
     loop
     {
-        let n = stream.read(&mut buffer).map_err(|err|
-        {
-            eprintln!("ERROR: could not read message from client: {err}");
-            let _ = messages.send(Message::ClientDisconnected);
-        })?;
-        messages.send(Message::NewMessage(buffer[0..n].to_vec()));
+        stream.read(&mut buffer);
     }
     todo!()
 }
