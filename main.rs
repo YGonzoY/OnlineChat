@@ -50,7 +50,11 @@ fn client(mut stream: TcpStream, messages: Sender<Message>) -> Result<()>
     buffer.resize(64, 0);
     loop
     {
-        stream.read(&mut buffer);
+        let n = stream.read(&mut buffer).map_err(|err|
+            {
+                messages.send(Message::ClientDisconnected);
+            } )?;
+        buffer[0..n]
     }
     todo!()
 }
