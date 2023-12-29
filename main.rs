@@ -69,7 +69,7 @@ fn main() -> Result<()>
     {
         match stream
         {
-            Ok(stream) => 
+            Ok(mut stream) => 
             { 
                 let message_sender = message_sender.clone();
                 thread::spawn(||{client(stream, message_sender)});
