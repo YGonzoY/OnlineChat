@@ -5,6 +5,8 @@ use std::io::Read;
 use std::fmt;
 use std::thread;
 use std::sync::mpsc::{Sender, Receiver, channel};
+use std::sync::Arc;
+use std::ops::Deref
 
 type Result<T> = result::Result<T, ()>;
 const SAFEMODE: bool = false;
@@ -13,9 +15,9 @@ struct Sensitive<T>(T);
 
 enum Message
 {
-    ClientConnected,
-    ClientDisconnected,
-    NewMessage,
+    ClientConnected(Arc<TcpStream>),
+    ClientDisconnected(Arc<TcpStream>),
+    NewMessage(Vec<u8>),
 }
 
 
@@ -40,9 +42,9 @@ fn server(_message: Receiver<Message>) -> Result<()>
     todo!()
 }
 
-fn client(mut stream: TcpStream, messages: Sender<Message>) -> Result<()>
+fn client(stream: Arc<TcpStream>, messages: Sender<Message>) -> Result<()>
 {
-    messages.send(Message::ClientConnected).map_err(|err|
+    messages.send(Message::ClientConnected(stream.clone())).map_err(|err|
     {
         eprintln!("ERROR: could not send message to server thread {err}")
     })?;
@@ -50,11 +52,15 @@ fn client(mut stream: TcpStream, messages: Sender<Message>) -> Result<()>
     buffer.resize(64, 0);
     loop
     {
-        let n = stream.read(&mut buffer).map_err(|err|
+        let n = stream.as_ref().read(&mut buffer).map_err(|err|
             {
-                messages.send(Message::ClientDisconnected);
+                eprintln!("errror could not read message {err}")
+                let _ = messages.send(Message::ClientDisconnected(stream.clone()));
             } )?;
-        buffer[0..n]
+        messages.send(Message::NewMessage(buffer[0..n].to_vec())).map_err(|err| 
+        {
+            eprintln!("ERROR: could not send message to server thread {err}")
+        })?;
     }
     todo!()
 }
@@ -73,8 +79,9 @@ fn main() -> Result<()>
     {
         match stream
         {
-            Ok(mut stream) => 
+            Ok(stream) => 
             { 
+                let stream = Arc::new(stream);
                 let message_sender = message_sender.clone();
                 thread::spawn(||{client(stream, message_sender)});
             }
